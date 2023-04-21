@@ -98,7 +98,17 @@ public:
     }
 
     Mat_VarDelete(_mat, var.c_str());
+    matvar_t *var_info{createVar(var, arr)};
+    if (var_info == nullptr) {
+      return false;
+    }
 
+    Mat_VarWrite(_mat, var_info, MAT_COMPRESSION_NONE);
+    Mat_VarFree(var_info);
+    return true;
+  }
+
+  static matvar_t *createVar(const std::string &var, const af::array &arr) {
     matvar_t *var_info{};
 
     std::size_t rank{arr.numdims()};
@@ -175,15 +185,9 @@ public:
                                dims, buf.data(), 0);
     }
 
-    if (var_info == nullptr) {
-      return false;
-    }
-
-    Mat_VarWrite(_mat, var_info, MAT_COMPRESSION_NONE);
-    Mat_VarFree(var_info);
-
-    return true;
+    return var_info;
   }
+
   bool openForRead() {
     if (_mat != nullptr) {
       return true;
@@ -201,6 +205,7 @@ public:
 
     return true;
   }
+
   bool openForWrite() {
     if (_mat != nullptr && _mat_mode == MAT_ACC_RDWR) {
       return true;
@@ -223,12 +228,14 @@ public:
 
     return true;
   }
+
   void close() {
     if (_mat != nullptr) {
       Mat_Close(_mat);
       _mat = nullptr;
     }
   }
+
   bool getVariabels(std::vector<std::string> &var_list) {
     MatFire mf(_fname);
     if (!mf.openForRead()) {
